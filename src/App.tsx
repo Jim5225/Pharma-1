@@ -99,8 +99,8 @@ const MainAppContent: React.FC = () => {
           onNavigate={(tab) => setActiveTab(tab)}
         />
 
-        {/* Scrollable View Container */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        {/* Scrollable View Container with mobile bottom bar clearance */}
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 pb-24 md:pb-8">
           <div className="max-w-[1440px] mx-auto">
             {activeTab === 'dashboard' && (
               <DashboardView
@@ -169,11 +169,13 @@ const MainAppContent: React.FC = () => {
           </div>
         </main>
 
-        {/* Mobile Bottom Navigation */}
+        {/* Mobile Bottom Navigation with Floating Camera & Drawer */}
         <MobileNav
           activeTab={activeTab}
           onNavigate={(tab) => setActiveTab(tab)}
           onOpenMoreMenu={() => setIsClosingOpen(true)}
+          onOpenPacketScanner={() => setIsPacketScannerOpen(true)}
+          onOpenSearch={() => setIsSearchOpen(true)}
         />
       </div>
 

@@ -192,11 +192,11 @@ export const PosScreen: React.FC<PosScreenProps> = ({ onNavigate, onOpenAddCusto
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 pb-12 items-start">
+    <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 pb-20 sm:pb-12 items-start">
       {/* ==================== LEFT 65%: MEDICINE SEARCH & CART ==================== */}
-      <div className="w-full lg:w-[65%] space-y-4">
+      <div className="w-full lg:w-[65%] space-y-3 sm:space-y-4">
         {/* Search Bar & Barcode Scanner Button */}
-        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs relative">
+        <div className="bg-white p-2.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs relative">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="w-5 h-5 text-emerald-600 absolute left-3.5 top-1/2 -translate-y-1/2" />
