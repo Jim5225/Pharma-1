@@ -30,7 +30,8 @@ const MainAppContent: React.FC = () => {
   const { currentRole, canAccess } = useAuthRole();
   const { activeReceiptSale, setActiveReceiptSale, findMedicineByBarcode, addToCart } = usePharmacy();
 
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  // Primary tab starts on 'pos' for ultra-fast counter selling
+  const [activeTab, setActiveTab] = useState<string>('pos');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAddMedicineOpen, setIsAddMedicineOpen] = useState(false);
   const [isNewPurchaseOpen, setIsNewPurchaseOpen] = useState(false);

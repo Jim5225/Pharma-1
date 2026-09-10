@@ -31,12 +31,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onNavigate, onOpenC
 
   const menuItems = [
     {
-      id: 'dashboard',
-      label: 'Dashboard',
-      icon: LayoutDashboard,
-      badge: null,
-    },
-    {
       id: 'pos',
       label: 'POS / Sales',
       icon: ShoppingCart,
@@ -45,7 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onNavigate, onOpenC
     },
     {
       id: 'inventory',
-      label: 'Inventory',
+      label: 'Medicine Catalog',
       icon: Pill,
       badge: kpis.lowStockCount > 0 ? `${kpis.lowStockCount} Low` : null,
       badgeColor: 'bg-amber-500 text-slate-950 font-bold',
@@ -86,6 +80,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onNavigate, onOpenC
       id: 'expenses',
       label: 'Expenses',
       icon: Receipt,
+      badge: null,
+    },
+    {
+      id: 'dashboard',
+      label: 'Dashboard & Analytics',
+      icon: LayoutDashboard,
       badge: null,
     },
     {

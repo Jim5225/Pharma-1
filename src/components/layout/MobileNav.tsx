@@ -57,16 +57,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
     <>
       {/* Mobile Bottom Navigation Bar - Safe area, Glassmorphism & High Contrast */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 flex items-center justify-around px-2 z-40 shadow-2xl">
-        <button
-          onClick={() => navTo('dashboard')}
-          className={`flex flex-col items-center justify-center w-14 py-1 text-[10px] transition active:scale-95 ${
-            activeTab === 'dashboard' ? 'text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <LayoutDashboard className="w-5 h-5 mb-0.5" />
-          <span>Home</span>
-        </button>
-
+        {/* 1st: POS Sale */}
         <button
           onClick={() => navTo('pos')}
           className={`relative flex flex-col items-center justify-center w-14 py-1 text-[10px] transition active:scale-95 ${
@@ -84,6 +75,17 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           <span>POS সেল</span>
         </button>
 
+        {/* 2nd: Stock / Medicine Catalog */}
+        <button
+          onClick={() => navTo('inventory')}
+          className={`flex flex-col items-center justify-center w-14 py-1 text-[10px] transition active:scale-95 ${
+            activeTab === 'inventory' ? 'text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Pill className="w-5 h-5 mb-0.5" />
+          <span>ক্যাটালগ</span>
+        </button>
+
         {/* Center Floating OCR Camera Button */}
         {onOpenPacketScanner && (
           <button
@@ -95,16 +97,18 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           </button>
         )}
 
+        {/* 4th: Dashboard & Analytics */}
         <button
-          onClick={() => navTo('inventory')}
+          onClick={() => navTo('dashboard')}
           className={`flex flex-col items-center justify-center w-14 py-1 text-[10px] transition active:scale-95 ${
-            activeTab === 'inventory' ? 'text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+            activeTab === 'dashboard' ? 'text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <Pill className="w-5 h-5 mb-0.5" />
-          <span>স্টক</span>
+          <LayoutDashboard className="w-5 h-5 mb-0.5" />
+          <span>ড্যাশবোর্ড</span>
         </button>
 
+        {/* 5th: More Drawer */}
         <button
           onClick={() => setShowDrawer(true)}
           className={`flex flex-col items-center justify-center w-14 py-1 text-[10px] transition active:scale-95 ${
