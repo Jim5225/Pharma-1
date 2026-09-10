@@ -24,6 +24,7 @@ import { NewPurchaseModal } from './components/purchases/NewPurchaseModal';
 import { BarcodeScannerModal } from './components/pos/BarcodeScannerModal';
 import { DailyClosingModal } from './components/closing/DailyClosingModal';
 import { PacketOcrScannerModal } from './components/scanner/PacketOcrScannerModal';
+import { LoginModal } from './components/auth/LoginModal';
 import { Sale } from './types';
 
 const MainAppContent: React.FC = () => {
@@ -39,6 +40,7 @@ const MainAppContent: React.FC = () => {
   const [isClosingOpen, setIsClosingOpen] = useState(false);
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [isPacketScannerOpen, setIsPacketScannerOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   // If role changes and cannot access current tab, fallback to dashboard
   useEffect(() => {
@@ -98,6 +100,7 @@ const MainAppContent: React.FC = () => {
         <TopHeader
           onOpenSearch={() => setIsSearchOpen(true)}
           onNavigate={(tab) => setActiveTab(tab)}
+          onOpenLogin={() => setIsLoginOpen(true)}
         />
 
         {/* Scrollable View Container with mobile bottom bar clearance */}
@@ -224,6 +227,12 @@ const MainAppContent: React.FC = () => {
       <DailyClosingModal
         isOpen={isClosingOpen}
         onClose={() => setIsClosingOpen(false)}
+      />
+
+      {/* Multi-tenant Pharmacy Login / Register Modal */}
+      <LoginModal
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
       />
     </div>
   );

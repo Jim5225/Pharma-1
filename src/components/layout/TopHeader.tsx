@@ -22,9 +22,10 @@ import { UserRole } from '../../types';
 interface TopHeaderProps {
   onOpenSearch: () => void;
   onNavigate: (tab: string) => void;
+  onOpenLogin: () => void;
 }
 
-export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenSearch, onNavigate }) => {
+export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenSearch, onNavigate, onOpenLogin }) => {
   const { currentRole, setRole, currentBranch, setBranch, branches, userName } = useAuthRole();
   const { notifications, markNotificationAsRead, clearAllNotifications, exportBackupJson, resetToDemoData } = usePharmacy();
 
@@ -86,6 +87,17 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenSearch, onNavigate }
 
       {/* Right: Controls & Actions */}
       <div className="flex items-center space-x-2 sm:space-x-3">
+        {/* Pharmacy Login / Account Button */}
+        <button
+          onClick={onOpenLogin}
+          className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-xl transition shadow-2xs"
+          title="Login to your specific pharmacy shop"
+        >
+          <Store className="w-3.5 h-3.5 text-emerald-700" />
+          <span className="hidden sm:inline">লগইন / চেঞ্জ শপ</span>
+          <span className="sm:hidden">লগইন</span>
+        </button>
+
         {/* Mobile Search Button */}
         <button
           onClick={onOpenSearch}
