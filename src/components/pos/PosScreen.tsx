@@ -25,6 +25,8 @@ import { formatBDT, getFEFOBatches, getDaysUntilExpiry, formatDate } from '../..
 import { ExpiredWarningModal } from './ExpiredWarningModal';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { QuickPieceCounter } from './QuickPieceCounter';
+import { useMedexDataset, MedexMedicineItem } from '../../utils/useMedexDataset';
+import { MedicineAlternativePanel, MedexAlternativeItem } from './MedicineAlternativePanel';
 
 interface PosScreenProps {
   onNavigate: (tab: string) => void;
@@ -36,7 +38,9 @@ export const PosScreen: React.FC<PosScreenProps> = ({ onNavigate, onOpenAddCusto
     medicines, 
     cart, 
     customers, 
+    suppliers,
     addToCart, 
+    addMedicine,
     updateCartItemQty, 
     updateCartItemBatch, 
     updateCartItemDiscount, 
@@ -47,6 +51,12 @@ export const PosScreen: React.FC<PosScreenProps> = ({ onNavigate, onOpenAddCusto
     findMedicineByBarcode
   } = usePharmacy();
   const { userName, currentBranch } = useAuthRole();
+
+  // MedEx Online Search & Alternative System
+  const { searchMedex, findAlternativesByGeneric } = useMedexDataset();
+  const [medexAlternativeMatch, setMedexAlternativeMatch] = useState<MedexAlternativeItem | null>(null);
+  const [medexMarketAlternatives, setMedexMarketAlternatives] = useState<MedexAlternativeItem[]>([]);
+  const [showAlternativePanel, setShowAlternativePanel] = useState(false);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,13 +99,17 @@ export const PosScreen: React.FC<PosScreenProps> = ({ onNavigate, onOpenAddCusto
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [cart, paymentMethod, selectedCustomerId, cashTendered]);
 
-  // Live filter search query
+  // Live filter search query + automatic MedEx online lookup
   useEffect(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) {
       setSearchResults([]);
+      setShowAlternativePanel(false);
+      setMedexAlternativeMatch(null);
+      setMedexMarketAlternatives([]);
       return;
     }
+
     const filtered = medicines.filter(m => 
       m.name.toLowerCase().includes(q) ||
       m.genericName.toLowerCase().includes(q) ||
@@ -105,7 +119,70 @@ export const PosScreen: React.FC<PosScreenProps> = ({ onNavigate, onOpenAddCusto
 
     setSearchResults(filtered);
     setSelectedSearchIndex(0);
-  }, [searchQuery, medicines]);
+
+    // Auto MedEx Search & Alternative calculation if not found locally
+    if (filtered.length === 0 && q.length >= 2) {
+      const medexMatches = searchMedex(q, 6);
+      if (medexMatches.length > 0) {
+        const top = medexMatches[0];
+        setMedexAlternativeMatch(top);
+        const alts = findAlternativesByGeneric(top.generic, top.strength, 6);
+        setMedexMarketAlternatives(alts);
+        setShowAlternativePanel(true);
+      } else {
+        setMedexAlternativeMatch(null);
+        setMedexMarketAlternatives([]);
+        setShowAlternativePanel(true);
+      }
+    } else {
+      setShowAlternativePanel(false);
+    }
+  }, [searchQuery, medicines, searchMedex, findAlternativesByGeneric]);
+
+  const handleSelectStockAlternative = (med: Medicine) => {
+    handleAddMedicine(med);
+    setShowAlternativePanel(false);
+    setSearchQuery('');
+  };
+
+  const handleImportMarketAlternative = (item: MedexAlternativeItem) => {
+    const medData: Omit<Medicine, 'id' | 'batches'> = {
+      name: item.name,
+      genericName: item.generic,
+      brand: item.brand,
+      manufacturer: item.manufacturer,
+      category: item.category,
+      dosageForm: item.dosageForm as any,
+      strength: item.strength,
+      unit: item.unit || 'Strip (10 pcs)',
+      barcode: `8941${Math.floor(100000 + Math.random() * 900000)}`,
+      sku: `${item.brand.slice(0, 3).toUpperCase()}-${(item.strength.replace(/[^a-zA-Z0-9]/g, '') || 'STD').slice(0, 4).toUpperCase()}-${item.dosageForm.slice(0, 3).toUpperCase()}`,
+      purchasePrice: item.purchasePrice,
+      sellingPrice: item.mrp,
+      mrp: item.mrp,
+      minSellingPrice: Number((item.mrp * 0.95).toFixed(2)),
+      currentStock: 100,
+      minStock: 25,
+      maxStock: 300,
+      reorderQuantity: 150,
+      supplierId: suppliers[0]?.id || 'sup-1',
+    };
+
+    const initialBatch = {
+      batchNumber: `${item.brand.slice(0, 2).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}A`,
+      purchaseDate: new Date().toISOString().split('T')[0],
+      expiryDate: '2027-12-31',
+      purchasePrice: item.purchasePrice,
+      sellingPrice: item.mrp,
+      quantity: 100,
+      supplierId: suppliers[0]?.id || 'sup-1'
+    };
+
+    const newMed = addMedicine(medData, initialBatch);
+    handleAddMedicine(newMed);
+    setShowAlternativePanel(false);
+    setSearchQuery('');
+  };
 
   // Handle Search Input Key Navigation (Up/Down/Enter)
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -262,6 +339,32 @@ export const PosScreen: React.FC<PosScreenProps> = ({ onNavigate, onOpenAddCusto
                         <span className={isLowStock ? 'text-amber-600 font-bold' : 'text-slate-700 font-semibold'}>
                           Stock: {med.currentStock} {med.unit.split(' ')[0]}
                         </span>
+                        {med.currentStock <= 0 && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const alts = findAlternativesByGeneric(med.genericName, med.strength, 6);
+                              setMedexAlternativeMatch({
+                                brand: med.brand,
+                                name: med.name,
+                                generic: med.genericName,
+                                strength: med.strength,
+                                dosageForm: med.dosageForm,
+                                manufacturer: med.manufacturer,
+                                category: med.category,
+                                mrp: med.sellingPrice,
+                                purchasePrice: med.purchasePrice,
+                                unit: med.unit
+                              });
+                              setMedexMarketAlternatives(alts);
+                              setShowAlternativePanel(true);
+                            }}
+                            className="px-2 py-0.5 rounded bg-sky-100 hover:bg-sky-200 text-sky-800 text-[10px] font-bold transition inline-flex items-center gap-1"
+                          >
+                            <span>🔍 বিকল্প ওষুধ দেখুন</span>
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -276,6 +379,20 @@ export const PosScreen: React.FC<PosScreenProps> = ({ onNavigate, onOpenAddCusto
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* MedEx Auto Alternative Panel when not found locally */}
+          {showAlternativePanel && (
+            <div className="absolute left-0 right-0 top-full mt-2 z-40 max-h-[80vh] overflow-y-auto">
+              <MedicineAlternativePanel
+                searchedQuery={searchQuery}
+                matchedMedexItem={medexAlternativeMatch}
+                marketAlternatives={medexMarketAlternatives}
+                allStockMedicines={medicines}
+                onSelectStockAlternative={handleSelectStockAlternative}
+                onImportMarketAlternative={handleImportMarketAlternative}
+              />
             </div>
           )}
         </div>

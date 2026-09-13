@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Pill, 
   Search, 
@@ -21,6 +21,8 @@ import { StatusBadge } from '../common/StatusBadge';
 import { MedicineDetailModal } from './MedicineDetailModal';
 import { BarcodeStickerModal } from './BarcodeStickerModal';
 import { MedexGrabberModal } from './MedexGrabberModal';
+import { useMedexDataset } from '../../utils/useMedexDataset';
+import { MedicineAlternativePanel, MedexAlternativeItem } from '../pos/MedicineAlternativePanel';
 
 interface InventoryListProps {
   onOpenAddMedicine: () => void;
@@ -28,7 +30,8 @@ interface InventoryListProps {
 }
 
 export const InventoryList: React.FC<InventoryListProps> = ({ onOpenAddMedicine, onNavigate }) => {
-  const { medicines, addToCart, suppliers } = usePharmacy();
+  const { medicines, addToCart, addMedicine, suppliers } = usePharmacy();
+  const { searchMedex, findAlternativesByGeneric } = useMedexDataset();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -79,6 +82,58 @@ export const InventoryList: React.FC<InventoryListProps> = ({ onOpenAddMedicine,
     const days = getDaysUntilExpiry(b.expiryDate);
     return days > 0 && days <= 90;
   })).length;
+
+  // MedEx auto alternative lookup when search produces 0 results
+  const { medexMatch, medexMarketAlternatives } = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (filteredMedicines.length > 0 || q.length < 2) {
+      return { medexMatch: null, medexMarketAlternatives: [] };
+    }
+    const matches = searchMedex(q, 5);
+    if (matches.length > 0) {
+      const top = matches[0];
+      const alts = findAlternativesByGeneric(top.generic, top.strength, 8);
+      return { medexMatch: top, medexMarketAlternatives: alts };
+    }
+    return { medexMatch: null, medexMarketAlternatives: [] };
+  }, [searchQuery, filteredMedicines.length, searchMedex, findAlternativesByGeneric]);
+
+  const handleImportFromAlternatives = (item: MedexAlternativeItem) => {
+    const medData: Omit<Medicine, 'id' | 'batches'> = {
+      name: item.name,
+      genericName: item.generic,
+      brand: item.brand,
+      manufacturer: item.manufacturer,
+      category: item.category,
+      dosageForm: item.dosageForm as any,
+      strength: item.strength,
+      unit: item.unit || 'Strip (10 pcs)',
+      barcode: `8941${Math.floor(100000 + Math.random() * 900000)}`,
+      sku: `${item.brand.slice(0, 3).toUpperCase()}-${(item.strength.replace(/[^a-zA-Z0-9]/g, '') || 'STD').slice(0, 4).toUpperCase()}-${item.dosageForm.slice(0, 3).toUpperCase()}`,
+      purchasePrice: item.purchasePrice,
+      sellingPrice: item.mrp,
+      mrp: item.mrp,
+      minSellingPrice: Number((item.mrp * 0.95).toFixed(2)),
+      currentStock: 100,
+      minStock: 25,
+      maxStock: 300,
+      reorderQuantity: 150,
+      supplierId: suppliers[0]?.id || 'sup-1',
+    };
+
+    const initialBatch = {
+      batchNumber: `${item.brand.slice(0, 2).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}A`,
+      purchaseDate: new Date().toISOString().split('T')[0],
+      expiryDate: '2027-12-31',
+      purchasePrice: item.purchasePrice,
+      sellingPrice: item.mrp,
+      quantity: 100,
+      supplierId: suppliers[0]?.id || 'sup-1'
+    };
+
+    const newMed = addMedicine(medData, initialBatch);
+    setSelectedMedicine(newMed);
+  };
 
   return (
     <div className="space-y-5 pb-12">
@@ -215,22 +270,35 @@ export const InventoryList: React.FC<InventoryListProps> = ({ onOpenAddMedicine,
       {/* Inventory Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         {filteredMedicines.length === 0 ? (
-          <div className="py-16 text-center text-slate-400 space-y-3">
-            <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-              <Pill className="w-7 h-7" />
+          searchQuery.trim().length >= 2 ? (
+            <div className="p-4 sm:p-6 bg-slate-50/50">
+              <MedicineAlternativePanel
+                searchedQuery={searchQuery}
+                matchedMedexItem={medexMatch}
+                marketAlternatives={medexMarketAlternatives}
+                allStockMedicines={medicines}
+                onSelectStockAlternative={(med) => setSelectedMedicine(med)}
+                onImportMarketAlternative={handleImportFromAlternatives}
+              />
             </div>
-            <p className="font-semibold text-slate-700 text-sm">No medicines found</p>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              Add your first medicine to start managing your pharmacy inventory and automatic expiry tracking.
-            </p>
-            <button
-              onClick={onOpenAddMedicine}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Add Medicine</span>
-            </button>
-          </div>
+          ) : (
+            <div className="py-16 text-center text-slate-400 space-y-3">
+              <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                <Pill className="w-7 h-7" />
+              </div>
+              <p className="font-semibold text-slate-700 text-sm">No medicines found</p>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                Add your first medicine to start managing your pharmacy inventory and automatic expiry tracking.
+              </p>
+              <button
+                onClick={onOpenAddMedicine}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Add Medicine</span>
+              </button>
+            </div>
+          )
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
