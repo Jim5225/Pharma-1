@@ -11,7 +11,8 @@ import {
   Download,
   CheckCircle,
   FileSpreadsheet,
-  Barcode
+  Barcode,
+  Globe
 } from 'lucide-react';
 import { usePharmacy } from '../../context/PharmacyContext';
 import { Medicine } from '../../types';
@@ -19,6 +20,7 @@ import { formatBDT, formatDate, getDaysUntilExpiry, getFEFOBatches } from '../..
 import { StatusBadge } from '../common/StatusBadge';
 import { MedicineDetailModal } from './MedicineDetailModal';
 import { BarcodeStickerModal } from './BarcodeStickerModal';
+import { MedexGrabberModal } from './MedexGrabberModal';
 
 interface InventoryListProps {
   onOpenAddMedicine: () => void;
@@ -34,6 +36,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({ onOpenAddMedicine,
   const [activeTab, setActiveTab] = useState<'all' | 'low_stock' | 'expiring' | 'expired'>('all');
   const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
   const [stickerMedicine, setStickerMedicine] = useState<Medicine | null>(null);
+  const [isMedexModalOpen, setIsMedexModalOpen] = useState(false);
 
   // Extract unique categories
   const categories = Array.from(new Set(medicines.map(m => m.category))).filter(Boolean);
@@ -92,6 +95,14 @@ export const InventoryList: React.FC<InventoryListProps> = ({ onOpenAddMedicine,
         </div>
 
         <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setIsMedexModalOpen(true)}
+            className="flex items-center space-x-1.5 px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl text-xs shadow-md shadow-sky-700/20 transition"
+          >
+            <Globe className="w-4 h-4" />
+            <span>🌐 MedEx Live Grabber</span>
+          </button>
+
           <button
             onClick={onOpenAddMedicine}
             className="flex items-center space-x-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-700/20 transition"
@@ -361,6 +372,12 @@ export const InventoryList: React.FC<InventoryListProps> = ({ onOpenAddMedicine,
       <BarcodeStickerModal
         medicine={stickerMedicine}
         onClose={() => setStickerMedicine(null)}
+      />
+
+      {/* MedEx Live Medicine Grabber & Catalog Modal */}
+      <MedexGrabberModal
+        isOpen={isMedexModalOpen}
+        onClose={() => setIsMedexModalOpen(false)}
       />
     </div>
   );

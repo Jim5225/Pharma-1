@@ -142,7 +142,16 @@ export const PharmacyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [medicines, setMedicines] = useState<Medicine[]>(() => {
     const saved = localStorage.getItem('pharmacare_medicines');
     if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
+      try {
+        const parsed: Medicine[] = JSON.parse(saved);
+        if (parsed.length < INITIAL_MEDICINES.length) {
+          const existingIds = new Set(parsed.map(m => m.id));
+          const merged = [...parsed, ...INITIAL_MEDICINES.filter(m => !existingIds.has(m.id))];
+          localStorage.setItem('pharmacare_medicines', JSON.stringify(merged));
+          return merged;
+        }
+        return parsed;
+      } catch { /* ignore */ }
     }
     return INITIAL_MEDICINES;
   });
@@ -169,7 +178,16 @@ export const PharmacyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [suppliers, setSuppliers] = useState<Supplier[]>(() => {
     const saved = localStorage.getItem('pharmacare_suppliers');
     if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
+      try {
+        const parsed: Supplier[] = JSON.parse(saved);
+        if (parsed.length < INITIAL_SUPPLIERS.length) {
+          const existingIds = new Set(parsed.map(s => s.id));
+          const merged = [...parsed, ...INITIAL_SUPPLIERS.filter(s => !existingIds.has(s.id))];
+          localStorage.setItem('pharmacare_suppliers', JSON.stringify(merged));
+          return merged;
+        }
+        return parsed;
+      } catch { /* ignore */ }
     }
     return INITIAL_SUPPLIERS;
   });
